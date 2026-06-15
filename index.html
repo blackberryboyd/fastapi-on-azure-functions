@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Exercise Leaderboard</title>
+    <style>
+        body { font-family: system-ui, Arial; max-width: 980px; margin: 24px auto; padding: 0 16px; background:#f7f7f7; }
+        header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+        h1 { margin: 0; font-size: 1.35rem; }
+        .controls { margin: 16px 0; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+        select, input[type="number"], input[type="text"], button { padding: 8px; font-size:14px; }
+        .muted { color:#666; font-size:0.9rem; }
+        table { width:100%; border-collapse: collapse; margin-top:8px; }
+        th, td { text-align:left; padding:8px; border-bottom:1px solid #ddd; }
+        .leaderboard-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:16px; margin-top:12px; }
+        .leaderboard-card { border:1px solid #ddd; border-radius:10px; padding:12px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,0.05); }
+        .leaderboard-card h3 { margin:0 0 8px; font-size:1rem; display:flex; align-items:center; gap:8px; }
+        .exercise-icon { width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; }
+        .exercise-icon svg { width:100%; height:100%; }
+        .mini-table th, .mini-table td { padding:6px 8px; font-size:0.92rem; }
+        .optional-controls { display:flex; flex-wrap:wrap; gap:12px; margin-bottom:12px; }
+        .optional-controls label { display:flex; align-items:center; gap:6px; font-size:0.95rem; }
+        #exerciseForm { display:flex; flex-wrap:wrap; gap:8px; margin:16px 0; align-items:center; }
+        #exerciseForm input, #exerciseForm button { min-width:120px; }
+        #selectedLeaderboardSection, #featuredSection, #optionalSection { margin-top:20px; }
+    </style>
+</head>
+<body>
+    <header>
+    <h1>Exercise Logging</h1>
+    <div class="muted">Powered by the Python backend</div>
+    <form id="exerciseForm">
+        <input list="nameOptions" type="text" id="name" placeholder="Name">
+        <datalist id="nameOptions"></datalist>
+
+        <input list="exerciseOptions" type="text" id="exercise" placeholder="Exercise (choose or type)">
+        <datalist id="exerciseOptions">
+            <option value="Squats">
+            <option value="Pushups">
+            <option value="Situps">
+            <option value="Stickhandling (mins)">
+            <option value="Total Shots">
+            <option value="Biking (km)">
+            <option value="Running (km)">
+            <option value="Plank (mins)">
+            <option value="Slap Shots">
+            <option value="Wrist Shots">
+            <option value="Snap Shots">
+            <option value="Backhand Shots">
+        </datalist>
+
+        <input type="number" id="amount" placeholder="Amount">
+        <button type="submit">Log Entry</button>
+    </form>
+    <div id="formStatus" class="muted"></div>
+
+    <h1>Exercise Leaderboard</h1>
+    
+    </header>
+
+    <div class="controls">
+        <label for="exerciseSelect">Exercise:</label>
+        <select id="exerciseSelect">
+            <option value="Squats">Squats</option>
+            <option value="Pushups">Pushups</option>
+            <option value="Situps">Situps</option>
+            <option value="Stickhandling (mins)">Stickhandling (mins)</option>
+            <option value="Total Shots">Total Shots</option>
+            <option value="Biking (km)">Biking (km)</option>
+            <option value="Running (km)">Running (km)</option>
+            <option value="Plank (mins)">Plank (mins)</option>
+            <option value="custom">Custom...</option>
+        </select>
+        <input id="customExercise" placeholder="Custom exercise" style="display:none; width:180px;" />
+        <label for="limit" class="muted">Top</label>
+        <input id="limit" type="number" min="1" max="20" value="5" style="width:64px" />
+        <button id="refreshBtn">Refresh selected</button>
+    </div>
+
+    <div id="selectedLeaderboardSection">
+        <h2>Selected leaderboard</h2>
+        <table id="leaderboard">
+            <thead>
+                <tr><th>Name</th><th>Total</th></tr>
+            </thead>
+            <tbody>
+                <tr><td colspan="2" class="muted">Select an exercise and click Refresh.</td></tr>
+            </tbody>
+        </table>
+        <div id="lastUpdated" class="muted">Not loaded yet.</div>
+    </div>
+
+    <div id="featuredSection">
+        <h2>Always shown</h2>
+        <div class="leaderboard-grid" id="featuredLeaderboards"></div>
+    </div>
+
+    <div id="optionalSection">
+        <h2>Optional tables</h2>
+        <div class="optional-controls">
+            <label><input type="checkbox" class="optionalExercise" value="Biking (km)"> Biking (km)</label>
+            <label><input type="checkbox" class="optionalExercise" value="Running (km)"> Running (km)</label>
+            <label><input type="checkbox" class="optionalExercise" value="Plank (mins)"> Plank (mins)</label>
+            <label><input type="checkbox" class="optionalExercise" value="Slap Shots"> Slap Shots</label>
+            <label><input type="checkbox" class="optionalExercise" value="Wrist Shots"> Wrist Shots</label>
+            <label><input type="checkbox" class="optionalExercise" value="Snap Shots"> Snap Shots</label>
+            <label><input type="checkbox" class="optionalExercise" value="Backhand Shots"> Backhand Shots</label>
+        </div>
+        <div class="leaderboard-grid" id="optionalLeaderboards"></div>
+    </div>
+
+
+
+    <script>
+        const featuredExercises = [
+            'Squats',
+            'Pushups',
+            'Situps',
+            'Stickhandling (mins)',
+            'Total Shots'
+        ];
+        const optionalCheckboxes = Array.from(document.querySelectorAll('.optionalExercise'));
+        const exerciseSelect = document.getElementById('exerciseSelect');
+        const customExercise = document.getElementById('customExercise');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const leaderboardBody = document.querySelector('#leaderboard tbody');
+        const lastUpdated = document.getElementById('lastUpdated');
+        const featuredLeaderboards = document.getElementById('featuredLeaderboards');
+        const optionalLeaderboards = document.getElementById('optionalLeaderboards');
+        const formStatus = document.getElementById('formStatus');
+
+        exerciseSelect.addEventListener('change', () => {
+            customExercise.style.display = exerciseSelect.value === 'custom' ? 'inline-block' : 'none';
+        });
+
+        function formatNumber(n) {
+            if (Number.isInteger(n)) return n;
+            return parseFloat(n).toFixed(2);
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+        }
+
+        function getExerciseIcon(exercise) {
+            const name = (exercise || '').toLowerCase();
+            const icon = {
+                squat: '<img src="/static/assets/squat.png" width=30 height=30>',
+                pushup: '<img src="/static/assets/push-ups.png" width=30 height=30; style="object-fit: cover;object-position: 25% 25%; ">',
+                situp: '<img src="/static/assets/situp.png" width=30 height=30; style="object-fit: cover; object-position: 35%; transform: translate(0, 5%);">',
+                stickhandling: '<img src="/static/assets/stickhandle.png" width=30 height=30>',
+                shots: '<img src="/static/assets/shooting.png" width=30 height=30>',
+                stickhandling: '<img src="/static/assets/stickhandle.png" width=30 height=30>',
+                shots: '<img src="/static/assets/shooting.png" width=30 height=30>',
+                biking: '<svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="17" r="3"/><circle cx="18" cy="17" r="3"/><path d="M6 17h4l2-5h4l2 5h2"/><path d="M12 12l-3-5"/><path d="M11 7l2 5"/></svg>',
+                running: '<svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="4" r="2"/><path d="M8 6l2 4 3 1 2 5"/><path d="M9 12l-2 5"/><path d="M15 14l3 3"/></svg>',
+                plank: '<svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15h16"/><path d="M6 15l2-5 6-3 4 3 2 5"/><path d="M7 20h10"/></svg>',
+                default: '<svg viewBox="0 0 24 24" fill="none" stroke="#333" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="6" r="2"/><path d="M12 8v4"/><path d="M8 17h8"/><path d="M9 12l2 5"/><path d="M15 12l-2 5"/></svg>'
+            };
+            if (name.includes('squat')) return icon.squat;
+            if (name.includes('push')) return icon.pushup;
+            if (name.includes('sit')) return icon.situp;
+            if (name.includes('stickhandling')) return icon.stickhandling;
+            if (name.includes('total shots')) return icon.shots;
+            if (name.includes('slap') || name.includes('wrist') || name.includes('snap') || name.includes('backhand')) return icon.shots;
+            if (name.includes('bike') || name.includes('biking')) return icon.biking;
+            if (name.includes('run')) return icon.running;
+            if (name.includes('plank')) return icon.plank;
+            return icon.default;
+        }
+
+        async function fetchLeaderboard(exercise, limit) {
+            const url = `/api/leaderboard/${encodeURIComponent(exercise)}?limit=${limit}`;
+            const res = await fetch(url);
+            if (!res.ok) throw new Error(res.statusText || 'Request failed');
+            return res.json();
+        }
+
+        function createLeaderboardCard(exercise, rows) {
+            const card = document.createElement('div');
+            card.className = 'leaderboard-card';
+            const title = document.createElement('h3');
+            title.innerHTML = `<span class="exercise-icon">${getExerciseIcon(exercise)}</span><span>${escapeHtml(exercise)}</span>`;
+            const table = document.createElement('table');
+            table.className = 'mini-table';
+            const thead = document.createElement('thead');
+            thead.innerHTML = '<tr><th>Name</th><th>Total</th></tr>';
+            const tbody = document.createElement('tbody');
+            if (!rows || rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="2" class="muted">No entries yet.</td></tr>';
+            } else {
+                rows.forEach(row => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${escapeHtml(row.name)}</td><td>${formatNumber(row.total)}</td>`;
+                    tbody.appendChild(tr);
+                });
+            }
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            card.appendChild(title);
+            card.appendChild(table);
+            return card;
+        }
+        async function loadNames() {
+            try {
+                const res = await fetch('/api/get-names');
+                if (!res.ok) return;
+                const names = await res.json();
+                const dataList = document.getElementById('nameOptions');
+                dataList.innerHTML = '';
+                names.forEach(name => {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    dataList.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading names:', error);
+            }
+        }
+
+        document.getElementById('exerciseForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const exercise = document.getElementById('exercise').value.trim();
+            const amount = parseFloat(document.getElementById('amount').value);
+            if (!name || !exercise || Number.isNaN(amount)) {
+                formStatus.textContent = 'Enter name, exercise, and amount.';
+                return;
+            }
+            try {
+                const res = await fetch('/api/log-exercise', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, exercise, amount, datetime: new Date().toISOString() })
+                });
+                if (!res.ok) throw new Error('Failed to save');
+                const body = await res.json();
+                formStatus.textContent = body.status || 'Saved';
+                document.getElementById('amount').value = '';
+                await loadNames();
+                await loadSelectedLeaderboard();
+                await loadFeaturedLeaderboards();
+                await loadOptionalLeaderboards();
+            } catch (err) {
+                formStatus.textContent = 'Error saving entry';
+            }
+        });
+
+        async function loadSelectedLeaderboard() {
+            const exercise = exerciseSelect.value === 'custom' ? customExercise.value.trim() : exerciseSelect.value;
+            const limit = parseInt(document.getElementById('limit').value, 10) || 5;
+            if (!exercise) {
+                leaderboardBody.innerHTML = '<tr><td colspan="2" class="muted">Enter a custom exercise name.</td></tr>';
+                return;
+            }
+            try {
+                const data = await fetchLeaderboard(exercise, limit);
+                leaderboardBody.innerHTML = '';
+                if (data.length === 0) {
+                    leaderboardBody.innerHTML = '<tr><td colspan="2" class="muted">No entries yet for this exercise.</td></tr>';
+                } else {
+                    data.forEach(row => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `<td>${escapeHtml(row.name)}</td><td>${formatNumber(row.total)}</td>`;
+                        leaderboardBody.appendChild(tr);
+                    });
+                }
+                lastUpdated.textContent = `Last updated: ${new Date().toLocaleString()}`;
+            } catch (err) {
+                leaderboardBody.innerHTML = `<tr><td colspan="2" class="muted">Error: ${escapeHtml(err.message)}</td></tr>`;
+            }
+        }
+
+        async function loadFeaturedLeaderboards() {
+            featuredLeaderboards.innerHTML = '';
+            const limit = parseInt(document.getElementById('limit').value, 3) || 5;
+            for (const exercise of featuredExercises) {
+                try {
+                    const data = await fetchLeaderboard(exercise, limit);
+                    featuredLeaderboards.appendChild(createLeaderboardCard(exercise, data));
+                } catch (err) {
+                    const errorCard = document.createElement('div');
+                    errorCard.className = 'leaderboard-card';
+                    errorCard.innerHTML = `<h3>${escapeHtml(exercise)}</h3><div class="muted">Error loading table.</div>`;
+                    featuredLeaderboards.appendChild(errorCard);
+                }
+            }
+        }
+
+        async function loadOptionalLeaderboards() {
+            optionalLeaderboards.innerHTML = '';
+            const limit = parseInt(document.getElementById('limit').value, 3) || 5;
+            const selected = optionalCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
+            if (selected.length === 0) {
+                optionalLeaderboards.innerHTML = '<div class="muted">Check an optional exercise above to display its table.</div>';
+                return;
+            }
+            for (const exercise of selected) {
+                try {
+                    const data = await fetchLeaderboard(exercise, limit);
+                    optionalLeaderboards.appendChild(createLeaderboardCard(exercise, data));
+                } catch (err) {
+                    const errorCard = document.createElement('div');
+                    errorCard.className = 'leaderboard-card';
+                    errorCard.innerHTML = `<h3>${escapeHtml(exercise)}</h3><div class="muted">Error loading table.</div>`;
+                    optionalLeaderboards.appendChild(errorCard);
+                }
+            }
+        }
+
+
+        refreshBtn.addEventListener('click', async () => {
+            await loadSelectedLeaderboard();
+            await loadFeaturedLeaderboards();
+            await loadOptionalLeaderboards();
+        });
+
+        optionalCheckboxes.forEach(cb => cb.addEventListener('change', loadOptionalLeaderboards));
+
+        window.addEventListener('load', async () => {
+            await loadNames();
+            await loadSelectedLeaderboard();
+            await loadFeaturedLeaderboards();
+            await loadOptionalLeaderboards();
+        });
+    </script>
+</body>
+</html>
