@@ -19,9 +19,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      AZURE_CLIENT_ID: ${{ vars.FASTAPIONAZUREFUNCTIONS_AZURE_CLIENT_ID }}
-      AZURE_TENANT_ID: ${{ vars.FASTAPIONAZUREFUNCTIONS_AZURE_TENANT_ID }}
-      AZURE_SUBSCRIPTION_ID: ${{ vars.FASTAPIONAZUREFUNCTIONS_AZURE_SUBSCRIPTION_ID }}
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
       AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
     steps:
       - name: Checkout
@@ -34,15 +34,15 @@ jobs:
         if: ${{ env.AZURE_CLIENT_ID != '' }}
         run: |
           azd auth login `
-            --client-id "$Env:FASTAPIONAZUREFUNCTIONS_AZURE_CLIENT_ID" `
+            --client-id "$Env:AZURE_CLIENT_ID" `
             --federated-credential-provider "github" `
-            --tenant-id "$Env:FASTAPIONAZUREFUNCTIONS_AZURE_TENANT_ID"
+            --tenant-id "$Env:AZURE_TENANT_ID"
         shell: pwsh
 
       - name: Log in with Azure (Client Credentials)
         if: ${{ env.AZURE_CREDENTIALS != '' }}
         run: |
-          $info = $Env:FASTAPIONAZUREFUNCTIONS_AZURE_CREDENTIALS | ConvertFrom-Json -AsHashtable;
+          $info = $Env:AZURE_CREDENTIALS | ConvertFrom-Json -AsHashtable;
           Write-Host "::add-mask::$($info.clientSecret)"
 
           azd auth login `
@@ -51,18 +51,18 @@ jobs:
             --tenant-id "$($info.tenantId)"
         shell: pwsh
         env:
-          AZURE_CREDENTIALS: ${{ secrets.FASTAPIONAZUREFUNCTIONS_AZURE_CREDENTIALS }}
+          AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Provision Infrastructure
         run: azd provision --no-prompt
         env:
-          AZURE_ENV_NAME: ${{ vars.FASTAPIONAZUREFUNCTIONS_AZURE_ENV_NAME }}
-          AZURE_LOCATION: ${{ vars.FASTAPIONAZUREFUNCTIONS_AZURE_LOCATION }}
-          AZURE_SUBSCRIPTION_ID: ${{ vars.FASTAPIONAZUREFUNCTIONS_AZURE_SUBSCRIPTION_ID }}
+          AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy Application
         run: azd deploy --no-prompt
         env:
-          AZURE_ENV_NAME: ${{ vars.FASTAPIONAZUREFUNCTIONS_AZURE_ENV_NAME }}
-          AZURE_LOCATION: ${{ vars.FASTAPIONAZUREFUNCTIONS_AZURE_LOCATION }}
-          AZURE_SUBSCRIPTION_ID: ${{ vars.FASTAPIONAZUREFUNCTIONS_AZURE_SUBSCRIPTION_ID }}
+          AZURE_ENV_NAME: ${{ vars.AZURE_ENV_NAME }}
+          AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+          AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
