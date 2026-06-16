@@ -45,9 +45,6 @@ app.add_middleware(
 async def handle_button():
     return {"message": "Success! The Python backend received your click."}
 
-# Define the data structure you expect to receive
-class UserData(BaseModel):
-    username: str
 
 
 # Pydantic model for data validation from the browser
