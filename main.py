@@ -3,6 +3,8 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from sqlalchemy import func
+from sqlalchemy.exc import SQLAlchemyError
+
 from fastapi.middleware.cors import CORSMiddleware
 
 from pydantic import BaseModel
@@ -71,15 +73,20 @@ class LogCreate(BaseModel):
 @app.post("/api/log-exercise")
 async def log_exercise(data: LogCreate, db: Session = Depends(get_db)):
     # Create the object, letting the database handle 'id' and 'date'
-    new_entry = ExerciseLog(
-        name=data.name,
-        exercise=data.exercise,
-        amount=data.amount,
-    )
-    db.add(new_entry)
-    db.commit()
-    db.refresh(new_entry) # Refresh to get the generated ID and datetime
-    return {"status": "Entry saved!"}
+    try:
+        new_entry = ExerciseLog(
+            name=data.name,
+            exercise=data.exercise,
+            amount=data.amount
+        )
+        db.add(new_entry)
+        db.commit() # The error usually happens here
+        db.refresh(new_entry)
+        return {"status": "success"}
+    except SQLAlchemyError as e:
+        # This will tell us if it's a constraint failure, missing column, etc.
+        print(f"DATABASE ERROR: {str(e)}") 
+        return {"status": "error", "message": f"Database error: {str(e)}"}
 
 @app.get("/api/get-names")
 async def get_names(db: Session = Depends(get_db)):
