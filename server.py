@@ -19,7 +19,7 @@ SHOT_KEYWORDS = ["slap", "wrist", "snap", "backhand"]
 SHOT_PATTERNS = [f"%{k}%" for k in SHOT_KEYWORDS]
 
 from database import get_db
-from .database import engine, Base
+from database import engine, Base
 
 app = FastAPI()
 root_dir = Path(__file__).resolve().parent
