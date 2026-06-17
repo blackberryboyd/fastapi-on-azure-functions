@@ -21,6 +21,8 @@ SHOT_KEYWORDS = ["slap", "wrist", "snap", "backhand"]
 SHOT_PATTERNS = [f"%{k}%" for k in SHOT_KEYWORDS]
 
 
+BASE_DIR = "/home/site/wwwroot"
+DB_PATH = os.path.join(BASE_DIR, "app.db")
 
 app = FastAPI()
 root_dir = Path(__file__).resolve().parent
@@ -28,7 +30,12 @@ app.mount("/static", StaticFiles(directory=str(root_dir)), name="static")
 
 @app.on_event("startup")
 def startup_event():
-    Base.metadata.create_all(bind=engine)
+    print("--- STARTUP: Initializing database ---")
+    try:
+        Base.metadata.create_all(bind=engine)
+        print(f"--- SUCCESS: Database created at {DB_PATH} ---")
+    except Exception as e:
+        print(f"--- FAILURE: Database could not be created: {e} ---")
 
 @app.get("/")
 async def read_index():
