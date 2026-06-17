@@ -13,13 +13,14 @@ from pathlib import Path
 from models import ExerciseLog
 
 import json
+from database import get_db
+from database import engine, Base
 
 # Shot exercise keywords used to compute "total shots" (we match variants via LIKE)
 SHOT_KEYWORDS = ["slap", "wrist", "snap", "backhand"]
 SHOT_PATTERNS = [f"%{k}%" for k in SHOT_KEYWORDS]
 
-from database import get_db
-from database import engine, Base
+
 
 app = FastAPI()
 root_dir = Path(__file__).resolve().parent
