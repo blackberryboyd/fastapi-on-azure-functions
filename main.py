@@ -62,14 +62,15 @@ class LogCreate(BaseModel):
 
 @app.post("/api/log-exercise")
 async def log_exercise(data: LogCreate, db: Session = Depends(get_db)):
+    # Create the object, letting the database handle 'id' and 'date'
     new_entry = ExerciseLog(
         name=data.name,
         exercise=data.exercise,
         amount=data.amount,
-        datetime=data.datetime or datetime.now()
     )
     db.add(new_entry)
     db.commit()
+    db.refresh(new_entry) # Refresh to get the generated ID and datetime
     return {"status": "Entry saved!"}
 
 @app.get("/api/get-names")

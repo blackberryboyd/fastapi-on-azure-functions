@@ -243,7 +243,7 @@
                 await loadFeaturedLeaderboards();
                 await loadOptionalLeaderboards();
             } catch (err) {
-                formStatus.textContent = 'Error saving entry';
+                formStatus.textContent = "Error: " + err.message;
             }
         });
 
