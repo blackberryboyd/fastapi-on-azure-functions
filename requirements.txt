@@ -7,3 +7,4 @@ fastapi
 sqlalchemy
 pydantic
 uvicorn
+mssql_python

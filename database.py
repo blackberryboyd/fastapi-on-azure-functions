@@ -1,18 +1,21 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 import os
+from mssql_python import connect
 
 db_test_pw = os.getenv("AZURE_SQL_PASSWORD")
-# Replace with your Azure SQL Server connection string
-SQLALCHEMY_DATABASE_URL = "mssql+pyodbc://office-workout.database.windows.net:1433/database=free-sql-db-9896707;adminuser;{db_test_pw};;Encrypt=yes;TrustServerCertificate=no;Driver={ODBC Driver 17 for SQL Server};"
+server = os.getenv('AZURE_SQL_SERVER')
+port = os.getenv('AZURE_SQL_PORT')
+database = os.getenv('AZURE_SQL_DATABASE')
 
+# For user-assigned managed identity.
+client_id = os.getenv('AZURE_SQL_USER')
+connection_string = f'Server={server},{port};Database={database};UID={client_id};Pwd={db_test_pw};Authentication=ActiveDirectoryMSI;Encrypt=yes;'
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+conn = connect(connection_string)
+
 
 # Dependency to get a database session in your routes
 def get_db():
-    db = SessionLocal()
+    db = conn.cursor()
     try:
         yield db
     finally:
