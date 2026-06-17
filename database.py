@@ -1,21 +1,19 @@
-import os
-from mssql_python import connect
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
 
-db_test_pw = os.getenv("AZURE_SQL_PASSWORD")
-server = os.getenv('AZURE_SQL_SERVER')
-port = os.getenv('AZURE_SQL_PORT')
-database = os.getenv('AZURE_SQL_DATABASE')
+# SQLite connection string - this creates a file named 'app.db' in your folder
+SQLALCHEMY_DATABASE_URL = "sqlite:///./app.db"
 
-# For user-assigned managed identity.
-client_id = os.getenv('AZURE_SQL_USER')
-connection_string = f'Server={server},{port};Database={database};UID={client_id};Pwd={db_test_pw};Authentication=ActiveDirectoryMSI;Encrypt=yes;'
+# connect_args is needed only for SQLite to allow multi-threading
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
+)
 
-conn = connect(connection_string)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()
 
-
-# Dependency to get a database session in your routes
 def get_db():
-    db = conn.cursor()
+    db = SessionLocal()
     try:
         yield db
     finally:
