@@ -4,9 +4,12 @@ import os
 
 # Use the /home/site/wwwroot path for Azure persistence
 # Fallback to local ./app.db for local development
-BASE_DIR = "/home/site/wwwroot"
-DB_PATH = os.path.join(BASE_DIR, "app.db")
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_PATH}"
+AZURE_PATH = "/home/site/wwwroot/app.db"
+LOCAL_PATH = "./app.db"
+
+# Use the Azure path if it exists, otherwise use local
+DB_FILE = AZURE_PATH if os.path.exists("/home/site/wwwroot") else LOCAL_PATH
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_FILE}"
 
 # connect_args is needed only for SQLite to allow multi-threading
 engine = create_engine(
