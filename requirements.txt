@@ -7,4 +7,5 @@ fastapi
 sqlalchemy
 pydantic
 uvicorn
-mssql_python
+gunicorn
+psycopg2-binary  # or your preferred DB driver

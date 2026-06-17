@@ -19,10 +19,15 @@ SHOT_KEYWORDS = ["slap", "wrist", "snap", "backhand"]
 SHOT_PATTERNS = [f"%{k}%" for k in SHOT_KEYWORDS]
 
 from database import get_db
+from .database import engine, Base
 
 app = FastAPI()
 root_dir = Path(__file__).resolve().parent
 app.mount("/static", StaticFiles(directory=str(root_dir)), name="static")
+
+@app.on_event("startup")
+def startup_event():
+    Base.metadata.create_all(bind=engine)
 
 @app.get("/")
 async def read_index():

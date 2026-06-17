@@ -1,8 +1,11 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
+import os
 
-# SQLite connection string - this creates a file named 'app.db' in your folder
-SQLALCHEMY_DATABASE_URL = "sqlite:///./app.db"
+# Use the /home/site/wwwroot path for Azure persistence
+# Fallback to local ./app.db for local development
+BASE_DIR = os.getenv("HOME", ".")
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{BASE_DIR}/app.db"
 
 # connect_args is needed only for SQLite to allow multi-threading
 engine = create_engine(
