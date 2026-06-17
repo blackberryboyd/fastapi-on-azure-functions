@@ -1,6 +1,5 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-import dotenv
 import os
 
 db_test_pw = os.getenv("AZURE_SQL_PASSWORD")
