@@ -13,6 +13,7 @@ from pathlib import Path
 from models import ExerciseLog
 
 import json
+import os
 from database import get_db
 from database import engine, Base
 
