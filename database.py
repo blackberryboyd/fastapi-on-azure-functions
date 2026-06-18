@@ -2,14 +2,12 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 import os
 
-# Use the /home/site/wwwroot path for Azure persistence
-# Fallback to local ./app.db for local development
-AZURE_PATH = "/home/site/wwwroot/app.db"
-LOCAL_PATH = "./app.db"
+# Use local ./app.db for development (simpler path handling on Windows)
+DB_FILE = "./app.db"
+SQLALCHEMY_DATABASE_URL = f"sqlite:///{os.path.abspath(DB_FILE)}"
 
-# Use the Azure path if it exists, otherwise use local
-DB_FILE = AZURE_PATH if os.path.exists("/home/site/wwwroot") else LOCAL_PATH
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{DB_FILE}"
+# Create Base here and export it so models.py can use the same one
+Base = declarative_base()
 
 # connect_args is needed only for SQLite to allow multi-threading
 engine = create_engine(
@@ -17,7 +15,6 @@ engine = create_engine(
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
 
 def get_db():
     db = SessionLocal()

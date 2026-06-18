@@ -221,20 +221,27 @@
 
         document.getElementById('exerciseForm').addEventListener('submit', async (e) => {
             e.preventDefault();
+            
             const name = document.getElementById('name').value.trim();
             const exercise = document.getElementById('exercise').value.trim();
-            const amount = parseFloat(document.getElementById('amount').value);
+            const amount = parseFloat(document.getElementById('amount').value.trim());
+            // Debugging: Check the values before fetching
+            console.log("Sending data:", { name, exercise, amount });
             if (!name || !exercise || Number.isNaN(amount)) {
                 formStatus.textContent = 'Enter name, exercise, and amount.';
                 return;
             }
             try {
+                
                 const res = await fetch('/api/log-exercise', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, exercise, amount, datetime: new Date().toISOString() })
+                    body: JSON.stringify({ name, exercise, amount})
                 });
-                if (!res.ok) throw new Error('Failed to save');
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    console.error("Server error:", errorData);
+                }
                 const body = await res.json();
                 formStatus.textContent = body.status || 'Saved';
                 document.getElementById('amount').value = '';

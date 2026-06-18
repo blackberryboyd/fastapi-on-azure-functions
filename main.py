@@ -1,9 +1,12 @@
 from fastapi import FastAPI, Depends
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.exceptions import RequestValidationError
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
+from fastapi import HTTPException
+from fastapi.routing import APIRouter
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -16,27 +19,32 @@ from models import ExerciseLog
 
 import json
 import os
-from database import get_db
-from database import engine, Base
+from database import engine, Base, get_db
 
 # Shot exercise keywords used to compute "total shots" (we match variants via LIKE)
 SHOT_KEYWORDS = ["slap", "wrist", "snap", "backhand"]
 SHOT_PATTERNS = [f"%{k}%" for k in SHOT_KEYWORDS]
 
 
-BASE_DIR = "/home/site/wwwroot"
+BASE_DIR = "."
 DB_PATH = os.path.join(BASE_DIR, "app.db")
 
 app = FastAPI()
 root_dir = Path(__file__).resolve().parent
 app.mount("/static", StaticFiles(directory=str(root_dir)), name="static")
+router = APIRouter()
+# Add this line to your main.py
+app.include_router(router)
 
 @app.on_event("startup")
 def startup_event():
     print("--- STARTUP: Initializing database ---")
     try:
+        print(f"Creating tables with engine: {engine}")
+        print(f"Base metadata tables: {Base.metadata.tables.keys()}")
         Base.metadata.create_all(bind=engine)
         print(f"--- SUCCESS: Database created at {DB_PATH} ---")
+        print(f"Database URL: {engine.url}")
     except Exception as e:
         print(f"--- FAILURE: Database could not be created: {e} ---")
 
@@ -68,25 +76,31 @@ class LogCreate(BaseModel):
     name: str
     exercise: str
     amount: float
-    datetime: Optional[datetime] = None # Optional; if blank, DB uses current time
 
-@app.post("/api/log-exercise")
+
+@router.post("/api/log-exercise")
 async def log_exercise(data: LogCreate, db: Session = Depends(get_db)):
     # Create the object, letting the database handle 'id' and 'date'
-    try:
-        new_entry = ExerciseLog(
+    
+    new_entry = ExerciseLog(
             name=data.name,
             exercise=data.exercise,
             amount=data.amount
-        )
+    )
+    try:
         db.add(new_entry)
-        db.commit() # The error usually happens here
+        db.commit()
         db.refresh(new_entry)
         return {"status": "success"}
     except SQLAlchemyError as e:
-        # This will tell us if it's a constraint failure, missing column, etc.
-        print(f"DATABASE ERROR: {str(e)}") 
-        return {"status": "error", "message": f"Database error: {str(e)}"}
+        db.rollback()  # Always rollback on error!
+        # Print the error to your terminal to see the details
+        print(f"DATABASE ERROR: {e}") 
+        raise HTTPException(status_code=400, detail="Could not save to database")
+
+    except Exception as e:
+        print(f"UNEXPECTED ERROR: {str(e)}")
+        return {"status": "error", "message": f"Unexpected error: {str(e)}"}
 
 @app.get("/api/get-names")
 async def get_names(db: Session = Depends(get_db)):
